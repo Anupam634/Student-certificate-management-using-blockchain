@@ -1,146 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import axios from 'axios';
+import { contractABI, contractAddress } from './contract/ethereumconfig';
 import jsPDF from 'jspdf';
+import { useLocation } from 'react-router-dom'; // For reading URL query parameters
+import './Verifier.css';
 
 const Verifier = () => {
-  const [certificateFile, setCertificateFile] = useState(null);
   const [certificateId, setCertificateId] = useState('');
-  const [fileData, setFileData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
   const [certificateDetails, setCertificateDetails] = useState({});
+  const [account, setAccount] = useState(null);
+  const [web3, setWeb3] = useState(new Web3(Web3.givenProvider));
 
-  // Web3 setup
-  const web3 = new Web3(window.ethereum);
+  // Get certificateId from the URL query string using useLocation from react-router-dom
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const certificateIdFromURL = queryParams.get('certificateId');
 
-  // Import ABI and contract address
-  const contractABI = [
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "certificate_id",
-          "type": "string"
-        }
-      ],
-      "name": "certificateGenerated",
-      "type": "event"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "_certificate_id",
-          "type": "string"
-        }
-      ],
-      "name": "getCertificate",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "_uid",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_candidate_name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_course_name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_org_name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_cgpa_total",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_ipfs_hash",
-          "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "_certificate_id",
-          "type": "string"
-        }
-      ],
-      "name": "isVerified",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
+  // Set certificateId from URL if available
+  useEffect(() => {
+    if (certificateIdFromURL) {
+      setCertificateId(certificateIdFromURL);
+      handleCertificateVerification(certificateIdFromURL); // Trigger verification automatically if certificateId is in URL
     }
-  ];
-  const contractAddress = "0x0cf84e004aa54c389ecb0337230aec0ae88287c7";
+  }, [certificateIdFromURL]);
 
-  // Handle file upload
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCertificateFile(file);
-      setFileData(URL.createObjectURL(file));
+  // Connect to MetaMask
+  const connectMetaMask = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        setAccount(accounts[0]);
+        setWeb3(new Web3(window.ethereum));
+      } catch (error) {
+        console.error('Connection to MetaMask failed:', error);
+      }
+    } else {
+      alert('MetaMask is not installed. Please install it to use this DApp.');
     }
   };
 
-  // Extract certificate data (Stubbed, replace with real extraction or backend call)
-  const extractCertificateData = (file) => {
-    return new Promise((resolve, reject) => {
-      axios.post('/api/extract_certificate', { file })
-        .then(response => {
-          resolve(response.data);
-        })
-        .catch(err => reject(err));
-    });
-  };
+  useEffect(() => {
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        setAccount(accounts[0]);
+      });
+    }
+  }, []);
 
-  // Handle certificate verification using certificate ID
-  const handleCertificateVerification = async () => {
-    if (!certificateId) {
+  // Verify certificate ID on the blockchain
+  const handleCertificateVerification = async (id) => {
+    if (!id) {
       setValidationMessage('Please enter a valid Certificate ID!');
       return;
     }
     setLoading(true);
     try {
       const contract = new web3.eth.Contract(contractABI, contractAddress);
-      const result = await contract.methods.isVerified(certificateId).call();
+      const isValid = await contract.methods.isVerified(id).call();
 
-      if (result) {
+      if (isValid) {
         setValidationMessage('Certificate validated successfully!');
-        // Fetch full certificate details
-        const certificateData = await contract.methods.getCertificate(certificateId).call();
-        const certificateDetails = {
+        const certificateData = await contract.methods.getCertificate(id).call();
+        setCertificateDetails({
           uid: certificateData[0],
           candidateName: certificateData[1],
           courseName: certificateData[2],
           orgName: certificateData[3],
           cgpa: certificateData[4],
-          ipfsHash: certificateData[5]
-        };
-        setCertificateDetails(certificateDetails);
+          ipfsHash: certificateData[5],
+        });
       } else {
         setValidationMessage('Invalid Certificate! Certificate might be tampered.');
       }
@@ -150,50 +80,9 @@ const Verifier = () => {
     setLoading(false);
   };
 
-  // Handle certificate verification using the uploaded PDF
-  const handlePdfVerification = async () => {
-    if (!certificateFile) {
-      setValidationMessage('Please upload a certificate first!');
-      return;
-    }
-    setLoading(true);
-    try {
-      const extractedData = await extractCertificateData(certificateFile);
-      const { uid, candidateName, courseName, orgName, cgpa } = extractedData;
-
-      // Create certificate ID from extracted data
-      const dataToHash = `${uid}${candidateName}${courseName}${orgName}${cgpa}`;
-      const certificateId = web3.utils.sha3(dataToHash);
-      setCertificateId(certificateId);
-
-      const contract = new web3.eth.Contract(contractABI, contractAddress);
-      const result = await contract.methods.isVerified(certificateId).call();
-      setValidationMessage(result ? 'Certificate validated successfully!' : 'Invalid Certificate! Certificate might be tampered.');
-
-      // Fetch full certificate details
-      if (result) {
-        const certificateData = await contract.methods.getCertificate(certificateId).call();
-        const certificateDetails = {
-          uid: certificateData[0],
-          candidateName: certificateData[1],
-          courseName: certificateData[2],
-          orgName: certificateData[3],
-          cgpa: certificateData[4],
-          ipfsHash: certificateData[5]
-        };
-        setCertificateDetails(certificateDetails);
-      }
-    } catch (error) {
-      setValidationMessage('Error validating certificate. Please try again.');
-    }
-    setLoading(false);
-  };
-
-  // Generate PDF with certificate details
+  // Generate PDF of certificate details
   const generateCertificatePDF = () => {
     const doc = new jsPDF();
-
-    // Add certificate details to the PDF
     doc.text("Certificate Details", 10, 10);
     doc.text(`UID: ${certificateDetails.uid}`, 10, 20);
     doc.text(`Candidate Name: ${certificateDetails.candidateName}`, 10, 30);
@@ -201,56 +90,63 @@ const Verifier = () => {
     doc.text(`Organization: ${certificateDetails.orgName}`, 10, 50);
     doc.text(`CGPA: ${certificateDetails.cgpa}`, 10, 60);
     doc.text(`IPFS Hash: ${certificateDetails.ipfsHash}`, 10, 70);
-
-    // Save the PDF
     doc.save("certificate_details.pdf");
   };
 
   return (
-    <div>
-      <h2>Verifier: Validate Certificate</h2>
+    <div className="container">
+      <h2 className="title">Verifier: Validate Certificate</h2>
 
-      <div>
-        <h3>Verify Certificate using PDF</h3>
-        <input type="file" accept="application/pdf" onChange={handleFileUpload} />
-        <button onClick={handlePdfVerification} disabled={loading}>
-          {loading ? 'Verifying...' : 'Verify PDF Certificate'}
+      {/* Connect to MetaMask */}
+      <div className="section">
+        <button onClick={connectMetaMask} className="button">
+          {account ? `Connected: ${account}` : 'Connect MetaMask'}
         </button>
-
-        {fileData && (
-          <div style={{ height: '750px' }}>
-            <Worker workerUrl={`https://unpkg.com/pdfjs-dist@2.6.347/build/pdf.worker.min.js`}>
-              <Viewer fileUrl={fileData} />
-            </Worker>
-          </div>
-        )}
-
-        {validationMessage && <p>{validationMessage}</p>}
       </div>
 
-      <div>
-        <h3>OR</h3>
-        <h4>Verify Certificate using Certificate ID</h4>
-        <input
-          type="text"
-          placeholder="Enter Certificate ID"
-          value={certificateId}
-          onChange={(e) => setCertificateId(e.target.value)}
-        />
-        <button onClick={handleCertificateVerification} disabled={loading}>
-          {loading ? 'Verifying...' : 'Verify Certificate ID'}
-        </button>
+      {/* Verify Certificate via Certificate ID (URL or manual input) */}
+      <div className="section">
+        <h3>Verify Certificate using Certificate ID</h3>
 
-        {validationMessage && <p>{validationMessage}</p>}
-      </div>
-
-      <div>
-        {certificateDetails.uid && (
+        {certificateId ? (
           <div>
-            <button onClick={generateCertificatePDF}>Download Certificate Details as PDF</button>
+            <p>Verifying Certificate with ID: {certificateId}</p>
+            <button onClick={() => handleCertificateVerification(certificateId)} className="button" disabled={loading}>
+              {loading ? 'Verifying...' : 'Verify Certificate ID'}
+            </button>
+          </div>
+        ) : (
+          <div>
+            {/* Input field to verify certificate by ID manually */}
+            <input
+              type="text"
+              placeholder="Enter Certificate ID"
+              value={certificateId}
+              onChange={(e) => setCertificateId(e.target.value)}
+              className="input-field"
+            />
+            <button onClick={() => handleCertificateVerification(certificateId)} className="button" disabled={loading}>
+              {loading ? 'Verifying...' : 'Verify Certificate ID'}
+            </button>
           </div>
         )}
+
+        {validationMessage && <p className="validation-message">{validationMessage}</p>}
       </div>
+
+      {/* Display and download certificate details */}
+      {certificateDetails.uid && (
+        <div className="certificate-details">
+          <h3>Certificate Details:</h3>
+          <p>UID: {certificateDetails.uid}</p>
+          <p>Candidate Name: {certificateDetails.candidateName}</p>
+          <p>Course Name: {certificateDetails.courseName}</p>
+          <p>Organization: {certificateDetails.orgName}</p>
+          <p>CGPA: {certificateDetails.cgpa}</p>
+          <p>IPFS Hash: {certificateDetails.ipfsHash}</p>
+          <button onClick={generateCertificatePDF} className="button">Download Certificate Details as PDF</button>
+        </div>
+      )}
     </div>
   );
 };

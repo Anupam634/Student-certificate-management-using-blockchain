@@ -1,0 +1,119 @@
+/* Verifier.css */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f5f7fa;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+    text-align: center;
+    background-color: #f5f7fa;
+}
+
+.title {
+    font-size: 2rem;
+    color: #2d3436;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section {
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.section h3 {
+    font-size: 1.4rem;
+    color: #0984e3;
+    margin-bottom: 15px;
+}
+
+.input-field, .file-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: #f9f9f9;
+    outline: none;
+    transition: border 0.3s ease;
+}
+
+.input-field:focus, .file-input:focus {
+    border-color: #0984e3;
+}
+
+.button {
+    width: 100%;
+    padding: 12px;
+    background-color: #0984e3;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.button:hover {
+    background-color: #74b9ff;
+}
+
+.button:active {
+    transform: scale(0.98);
+}
+
+.validation-message {
+    font-size: 1rem;
+    color: #d63031;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.certificate-details {
+    background-color: #f1f2f6;
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 20px;
+    text-align: left;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.certificate-details h3 {
+    font-size: 1.3rem;
+    color: #2d3436;
+    margin-bottom: 10px;
+}
+
+.certificate-details p {
+    font-size: 1rem;
+    color: #636e72;
+    margin: 6px 0;
+}
+
+.viewer-container {
+    margin-top: 20px;
+    width: 100%;
+    height: 750px;
+}

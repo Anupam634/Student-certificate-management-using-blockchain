@@ -3,6 +3,7 @@ import Web3 from 'web3';
 import axios from 'axios';
 import { contractABI, contractAddress } from './contract/ethereumconfig';
 import { jsPDF } from 'jspdf';
+import { QRCodeSVG } from 'qrcode.react';  // Import QRCodeSVG
 import './Institute.css';
 
 const Institute = () => {
@@ -20,6 +21,7 @@ const Institute = () => {
   const [certificateId, setCertificateId] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
   const [transactionHash, setTransactionHash] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState(''); // To hold the QR code data
 
   // Initialize Web3 and Contract
   useEffect(() => {
@@ -52,8 +54,8 @@ const Institute = () => {
   // Upload to Pinata
   const uploadToPinata = async (pdfFile) => {
     const pinataApiUrl = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
-    const apiKey = 'b0568259042e8532ab9d';  // Original Pinata API key
-    const apiSecret = 'bb5b6f6e1486d3cf267225821e1a0f6b6047436f9bd90b7650a8515df743a189';  // Original Pinata API secret
+    const apiKey = 'b0568259042e8532ab9d';
+    const apiSecret = 'bb5b6f6e1486d3cf267225821e1a0f6b6047436f9bd90b7650a8515df743a189';
 
     const formData = new FormData();
     formData.append('file', pdfFile);
@@ -81,7 +83,6 @@ const Institute = () => {
     doc.setFontSize(20);
     doc.text('Certificate of Completion', 20, 30);
 
-    // Add certificate details
     doc.setFontSize(16);
     doc.text(`UID: ${certificateDetails.uid}`, 20, 50);
     doc.text(`Name: ${certificateDetails.candidateName}`, 20, 60);
@@ -105,7 +106,6 @@ const Institute = () => {
         const certificateId = Web3.utils.sha3(dataToHash);
         setCertificateId(certificateId);
 
-        // Send transaction without custom fee, letting MetaMask set the gas price
         const receipt = await contract.methods
           .generateCertificate(
             certificateId,
@@ -118,9 +118,12 @@ const Institute = () => {
           )
           .send({ from: account });
 
-        // Capture transaction hash
         setTransactionHash(receipt.transactionHash);
         console.log(`Certificate successfully generated with Certificate ID: ${certificateId}`);
+
+        // Set the QR Code URL (which could be the certificateId or a verification URL)
+        const qrUrl = `http://localhost:3000/Verifier?certificateId=${certificateId}`;  // Update this URL with your actual verification page URL
+        setQrCodeUrl(qrUrl);
       } catch (error) {
         console.error('Error generating certificate:', error);
       }
@@ -139,7 +142,7 @@ const Institute = () => {
   };
 
   return (
-    <div>
+    <div className="container">
       <h2>Institute Certificate Generation</h2>
       <button onClick={connectMetaMask}>
         {account ? `Connected: ${account}` : 'Connect to MetaMask'}
@@ -165,26 +168,35 @@ const Institute = () => {
           <label>CGPA:</label>
           <input type="text" name="cgpa" value={certificateDetails.cgpa} onChange={handleInputChange} />
         </div>
-        <button type="button" onClick={handleGenerateCertificate}>Generate Certificate</button>
+        <div className="form-button">
+          <button type="button" onClick={handleGenerateCertificate}>Generate Certificate</button>
+        </div>
       </form>
 
       {certificateId && <div>Certificate ID: {certificateId}</div>}
 
       {transactionHash && (
-        <div>
+        <div className="transaction-details">
           <h3>Transaction Details</h3>
           <a
             href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Transaction on sepolia Etherscan
+            View Transaction on Sepolia Etherscan
           </a>
         </div>
       )}
 
+      {qrCodeUrl && (
+        <div className="qr-code">
+          <h3>Scan to Verify Certificate</h3>
+          <QRCodeSVG value={qrCodeUrl} size={128} />  {/* This is the QR code */}
+        </div>
+      )}
+
       {pdfFile && (
-        <div>
+        <div id="generated-certificate">
           <h3>Generated Certificate</h3>
           <embed src={URL.createObjectURL(pdfFile)} width="100%" height="600px" />
         </div>

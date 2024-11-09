@@ -122,7 +122,7 @@ const Institute = () => {
         console.log(`Certificate successfully generated with Certificate ID: ${certificateId}`);
 
         // Set the QR Code URL (which could be the certificateId or a verification URL)
-        const qrUrl = `http://localhost:3000/Verifier?certificateId=${certificateId}`;  // Update this URL with your actual verification page URL
+        const qrUrl = `https://certificatevalidation.netlify.app/Verifier?certificateId=${certificateId}`;  // Update this URL with your actual verification page URL
         setQrCodeUrl(qrUrl);
       } catch (error) {
         console.error('Error generating certificate:', error);

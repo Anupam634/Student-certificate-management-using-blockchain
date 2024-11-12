@@ -3,7 +3,7 @@ import Web3 from 'web3';
 import axios from 'axios';
 import { contractABI, contractAddress } from './contract/ethereumconfig';
 import { jsPDF } from 'jspdf';
-import { QRCodeSVG } from 'qrcode.react';  // Import QRCodeSVG
+import { QRCodeSVG } from 'qrcode.react';
 import './Institute.css';
 
 const Institute = () => {
@@ -21,7 +21,8 @@ const Institute = () => {
   const [certificateId, setCertificateId] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
   const [transactionHash, setTransactionHash] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState(''); // To hold the QR code data
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false); 
 
   // Initialize Web3 and Contract
   useEffect(() => {
@@ -98,6 +99,7 @@ const Institute = () => {
   // Generate Certificate with MetaMask Transaction
   const handleGenerateCertificate = async () => {
     if (web3 && contract && account) {
+      setIsGenerating(true); 
       try {
         const pdfFile = generateCertificatePDF();
         const ipfsHash = await uploadToPinata(pdfFile);
@@ -122,13 +124,16 @@ const Institute = () => {
         console.log(`Certificate successfully generated with Certificate ID: ${certificateId}`);
 
         // Set the QR Code URL (which could be the certificateId or a verification URL)
-        const qrUrl = `https://certificatevalidation.netlify.app/Verifier?certificateId=${certificateId}`;  // Update this URL with your actual verification page URL
+        const qrUrl = `http://localhost:3000/Verifier?certificateId=${certificateId}`;
         setQrCodeUrl(qrUrl);
       } catch (error) {
         console.error('Error generating certificate:', error);
+      } finally {
+        setIsGenerating(false); 
       }
     } else {
       alert('Please connect to MetaMask first');
+      setIsGenerating(false); 
     }
   };
 
@@ -144,32 +149,34 @@ const Institute = () => {
   return (
     <div className="container">
       <h2>Institute Certificate Generation</h2>
-      <button onClick={connectMetaMask}>
+      <button onClick={connectMetaMask} disabled={isGenerating}>
         {account ? `Connected: ${account}` : 'Connect to MetaMask'}
       </button>
       <form>
         <div>
           <label>UID:</label>
-          <input type="text" name="uid" value={certificateDetails.uid} onChange={handleInputChange} />
+          <input type="text" name="uid" value={certificateDetails.uid} onChange={handleInputChange} disabled={isGenerating} />
         </div>
         <div>
           <label>Name:</label>
-          <input type="text" name="candidateName" value={certificateDetails.candidateName} onChange={handleInputChange} />
+          <input type="text" name="candidateName" value={certificateDetails.candidateName} onChange={handleInputChange} disabled={isGenerating} />
         </div>
         <div>
           <label>Course Name:</label>
-          <input type="text" name="courseName" value={certificateDetails.courseName} onChange={handleInputChange} />
+          <input type="text" name="courseName" value={certificateDetails.courseName} onChange={handleInputChange} disabled={isGenerating} />
         </div>
         <div>
           <label>Organization Name:</label>
-          <input type="text" name="orgName" value={certificateDetails.orgName} onChange={handleInputChange} />
+          <input type="text" name="orgName" value={certificateDetails.orgName} onChange={handleInputChange} disabled={isGenerating} />
         </div>
         <div>
           <label>CGPA:</label>
-          <input type="text" name="cgpa" value={certificateDetails.cgpa} onChange={handleInputChange} />
+          <input type="text" name="cgpa" value={certificateDetails.cgpa} onChange={handleInputChange} disabled={isGenerating} />
         </div>
         <div className="form-button">
-          <button type="button" onClick={handleGenerateCertificate}>Generate Certificate</button>
+          <button type="button" onClick={handleGenerateCertificate} disabled={isGenerating}>
+            {isGenerating ? 'Generating...' : 'Generate Certificate'}
+          </button>
         </div>
       </form>
 
@@ -191,7 +198,7 @@ const Institute = () => {
       {qrCodeUrl && (
         <div className="qr-code">
           <h3>Scan to Verify Certificate</h3>
-          <QRCodeSVG value={qrCodeUrl} size={128} />  {/* This is the QR code */}
+          <QRCodeSVG value={qrCodeUrl} size={128} />
         </div>
       )}
 

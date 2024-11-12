@@ -73,11 +73,16 @@ const Verifier = () => {
         });
       } else {
         setValidationMessage('Invalid Certificate! Certificate might be tampered.');
+        setCertificateDetails({}); 
       }
     } catch (error) {
       setValidationMessage('Error validating certificate. Please try again.');
+      setCertificateDetails({}); 
     }
     setLoading(false);
+
+    
+    setCertificateId('');
   };
 
   // Generate PDF of certificate details
@@ -108,16 +113,10 @@ const Verifier = () => {
       <div className="section">
         <h3>Verify Certificate using Certificate ID</h3>
 
-        {certificateId ? (
-          <div>
-            <p>Verifying Certificate with ID: {certificateId}</p>
-            <button onClick={() => handleCertificateVerification(certificateId)} className="button" disabled={loading}>
-              {loading ? 'Verifying...' : 'Verify Certificate ID'}
-            </button>
-          </div>
+        {certificateIdFromURL ? (
+          <p>Verifying Certificate with ID: {certificateIdFromURL}</p>
         ) : (
           <div>
-            {/* Input field to verify certificate by ID manually */}
             <input
               type="text"
               placeholder="Enter Certificate ID"

@@ -124,7 +124,7 @@ const Institute = () => {
         console.log(`Certificate successfully generated with Certificate ID: ${certificateId}`);
 
         // Set the QR Code URL (which could be the certificateId or a verification URL)
-        const qrUrl = `http://localhost:3000/Verifier?certificateId=${certificateId}`;
+        const qrUrl = `https://student-certificate-management-using-blockchain.vercel.app/verifier?certificateId=${certificateId}`;
         setQrCodeUrl(qrUrl);
       } catch (error) {
         console.error('Error generating certificate:', error);

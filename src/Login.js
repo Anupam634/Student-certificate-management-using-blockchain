@@ -13,9 +13,13 @@ function Login() {
   const navigate = useNavigate();
   const profile = sessionStorage.getItem("profile");
 
-  // Institute's hard-coded credentials
+  // Institute login 
   const instituteEmail = "anupambera@gmail.com";
   const institutePassword = "anupambera@gmail.com";
+  const instituteEmail = "swagatamr577@gmail.com";
+  const institutePassword = "swagatamr577@gmail.com";
+  const instituteEmail = "bablaroy577@gmail.com";
+  const institutePassword = "bablaroy577@gmail.com";
 
   const handleLogin = async (e) => {
     e.preventDefault();

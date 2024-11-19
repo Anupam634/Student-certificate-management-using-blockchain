@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from './firebase/firebaseconfig';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import './Login.css'; // Optional: style the form
 import './Institute';
 
@@ -13,19 +13,24 @@ function Login() {
   const navigate = useNavigate();
   const profile = sessionStorage.getItem("profile");
 
-  // Institute login 
-  const instituteEmail = "anupambera@gmail.com";
-  const institutePassword = "anupambera@gmail.com";
-  const instituteEmail = "swagatamr577@gmail.com";
-  const institutePassword = "swagatamr577@gmail.com";
-  const instituteEmail = "bablaroy577@gmail.com";
-  const institutePassword = "bablaroy577@gmail.com";
+  // List of valid institute email-password pairs
+  const validInstituteUsers = [
+    { email: "anupambera@gmail.com", password: "anupambera@gmail.com" },
+    { email: "swagatamr577@gmail.com", password: "swagatamr577@gmail.com" },
+    { email: "bablaroy577@gmail.com", password: "bablaroy577@gmail.com" }
+  ];
 
+  // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
+
     if (profile === "Institute") {
-      // Directly validate institute credentials
-      if (email === instituteEmail && password === institutePassword) {
+      // Validate institute credentials
+      const user = validInstituteUsers.find(
+        (user) => user.email === email && user.password === password
+      );
+
+      if (user) {
         navigate("/Institute");
       } else {
         setError("Invalid credentials!");
